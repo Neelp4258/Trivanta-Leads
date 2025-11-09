@@ -1,0 +1,4188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trivanta Edge - Lead Tracking Portal</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-storage.js"></script>
+    
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- html2canvas for PDF with images -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #1a237e;
+            --secondary: #3949ab;
+            --accent: #5c6bc0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --dark: #212121;
+            --light: #f5f5f5;
+            --white: #ffffff;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: #1a237e;
+        }
+        
+        .login-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .logo p {
+            color: var(--accent);
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: var(--dark);
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: var(--white);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: var(--secondary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-secondary {
+            background: var(--accent);
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+        }
+        
+        /* Main Dashboard */
+        .dashboard {
+            display: none;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: var(--white);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h2 {
+            color: var(--primary);
+            font-size: 20px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .role-badge {
+            background: var(--secondary);
+            color: var(--white);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .logout-btn {
+            background: var(--danger);
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #d32f2f;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: var(--white);
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            color: var(--dark);
+        }
+        
+        .nav-tab.active {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+        
+        .nav-tab:hover:not(.active) {
+            background: #f0f0f0;
+        }
+        
+        /* Content Sections */
+        .content {
+            padding: 20px;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        /* Lead Cards */
+        .lead-card {
+            background: var(--white);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        
+        .lead-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+        
+        .lead-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .lead-status {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--white);
+            font-weight: 600;
+        }
+        
+        .status-new { background: var(--success); }
+        .status-contacted { background: var(--warning); }
+        .status-meeting { background: var(--secondary); }
+        .status-proposal { background: var(--accent); }
+        .status-closed { background: var(--danger); }
+        
+        .lead-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .lead-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .lead-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .action-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: var(--white);
+            border-radius: 4px;
+            padding: 30px;
+            max-width: 500px;
+            margin: 0 auto;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 99;
+            transition: all 0.3s;
+        }
+        
+        .fab:hover {
+            background: var(--secondary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            background: var(--white);
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .search-input {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px;
+            font-size: 16px;
+        }
+        
+        /* Filter Chips */
+        .filter-chips {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .chip {
+            padding: 8px 16px;
+            background: var(--white);
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .chip.active {
+            background: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+        
+        .chip:hover:not(.active) {
+            background: #f0f0f0;
+        }
+        
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid var(--white);
+        }
+        
+        .timeline-content {
+            background: var(--white);
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        
+        .timeline-date {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+        
+        .timeline-text {
+            font-size: 14px;
+            color: var(--dark);
+        }
+        
+        /* Meeting Outcome Styles */
+        .meeting-past {
+            background-color: #fff3e0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            border-left: 3px solid #ff9800;
+        }
+        
+        .meeting-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .meeting-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .meeting-btn-done {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .meeting-btn-done:hover {
+            background-color: #c8e6c9;
+        }
+        
+        .meeting-btn-cancel {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .meeting-btn-cancel:hover {
+            background-color: #ffcdd2;
+        }
+        
+        .meeting-btn-reschedule {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .meeting-btn-reschedule:hover {
+            background-color: #bbdefb;
+        }
+        
+        .meeting-outcome {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .meeting-outcome.done {
+            background-color: #e8f5e9;
+            border-left: 3px solid #4caf50;
+        }
+        
+        .meeting-outcome.cancelled {
+            background-color: #ffebee;
+            border-left: 3px solid #f44336;
+        }
+        
+        .meeting-outcome.rescheduled {
+            background-color: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+        
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed #d0d0d0;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: #f5f5f5;
+        }
+        
+        .file-list {
+            margin-top: 10px;
+        }
+        
+        .file-item {
+            background: var(--light);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: var(--white);
+            padding: 12px 24px;
+            border-radius: 4px;
+            z-index: 2000;
+            display: none;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Installation Card Styles */
+        .installation-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            position: relative;
+        }
+
+        .installation-card.scheduled {
+            border-left-color: var(--warning);
+        }
+
+        .installation-card.in-progress {
+            border-left-color: #2196f3;
+        }
+
+        .installation-card.completed {
+            border-left-color: var(--success);
+        }
+
+        .installation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .installation-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .installation-date {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .installation-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .installation-status.scheduled {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .installation-status.in-progress {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .installation-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .installation-info {
+            margin-top: 15px;
+        }
+
+        .installation-info-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .installation-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Signature Pad Styles */
+        .signature-container {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fafafa;
+            margin: 15px 0;
+        }
+
+        .signature-pad {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .signature-controls {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .signature-preview {
+            max-width: 200px;
+            max-height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .image-capture-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px dashed #3949ab;
+            border-radius: 8px;
+            background: #f5f7ff;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .camera-input {
+            display: none;
+        }
+        
+        .completion-image {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .completion-image img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Receipt Styles */
+        .receipt-preview {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .receipt-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-logo {
+            max-width: 100px;
+            min-width: 80px;
+            height: auto;
+            flex-shrink: 0;
+        }
+
+        .receipt-header-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        .receipt-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .receipt-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .receipt-company {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .receipt-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-section {
+            margin-bottom: 20px;
+        }
+
+        .receipt-section h4 {
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .receipt-signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+            border-top: 2px solid #000;
+            padding-top: 20px;
+        }
+
+        .signature-block {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-bottom: 2px solid #000;
+            height: 60px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            padding-bottom: 5px;
+        }
+
+        .signature-image {
+            max-width: 150px;
+            max-height: 50px;
+        }
+
+        /* Large Modal for Installation */
+        .modal-content.large {
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .receipt-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .receipt-signatures {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div class="login-screen" id="loginScreen">
+            <div class="login-card">
+                <div class="logo">
+                    <h1>Trivanta Edge</h1>
+                    <p>Lead Tracking Portal</p>
+                    <p style="font-size: 12px; margin-top: 5px;">Parking, Perfected.</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Main Dashboard -->
+        <div class="dashboard" id="dashboard">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-content">
+                    <h2>Trivanta Edge</h2>
+                    <div class="user-info">
+                        <span class="role-badge" id="userRole">Admin</span>
+                        <button class="logout-btn" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showSection('overview')">Overview</button>
+                <button class="nav-tab" onclick="showSection('leads')">Leads</button>
+                <button class="nav-tab" onclick="showSection('meetings')">Meetings</button>
+                <button class="nav-tab" onclick="showSection('installation')">Installation</button>
+                <button class="nav-tab" onclick="showSection('reports')">Reports</button>
+                <button class="nav-tab admin-only" onclick="showSection('users')">Users</button>
+            </div>
+            
+            <!-- Content -->
+            <div class="content">
+                <!-- Overview Section -->
+                <div class="section active" id="overview">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalLeads">0</div>
+                            <div class="stat-label">Total Leads</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="activeMeetings">0</div>
+                            <div class="stat-label">Active Meetings</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="newLeads">0</div>
+                            <div class="stat-label">New This Month</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="conversionRate">0%</div>
+                            <div class="stat-label">Conversion Rate</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 20px 0 15px; color: var(--primary);">Recent Activities</h3>
+                    <div class="timeline" id="recentActivities">
+                        <!-- Timeline items will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Leads Section -->
+                <div class="section" id="leads">
+                    <div class="search-bar">
+                        <span>🔍</span>
+                        <input type="text" class="search-input" id="searchLeads" placeholder="Search leads...">
+                    </div>
+                    
+                    <div class="filter-chips">
+                        <div class="chip active" onclick="filterLeads('all', event)">All</div>
+                        <div class="chip" onclick="filterLeads('new', event)">New</div>
+                        <div class="chip" onclick="filterLeads('contacted', event)">Contacted</div>
+                        <div class="chip" onclick="filterLeads('meeting', event)">Meeting</div>
+                        <div class="chip" onclick="filterLeads('proposal', event)">Proposal</div>
+                        <div class="chip" onclick="filterLeads('closed', event)">Closed</div>
+                    </div>
+                    
+                    <div id="leadsList">
+                        <!-- Lead cards will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Meetings Section -->
+                <div class="section" id="meetings">
+                    <div id="meetingsList">
+                        <!-- Meeting cards will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Installation Section -->
+                <div class="section" id="installation">
+                    <div class="search-bar">
+                        <span>🔍</span>
+                        <input type="text" class="search-input" id="searchInstallations" placeholder="Search installations...">
+                    </div>
+                    
+                    <div class="filter-chips">
+                        <div class="chip active" onclick="filterInstallations('all', event)">All</div>
+                        <div class="chip" onclick="filterInstallations('scheduled', event)">Scheduled</div>
+                        <div class="chip" onclick="filterInstallations('in-progress', event)">In Progress</div>
+                        <div class="chip" onclick="filterInstallations('completed', event)">Completed</div>
+                    </div>
+                    
+                    <div id="installationsList">
+                        <!-- Installation cards will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Reports Section -->
+                <div class="section" id="reports">
+                    <div class="stat-card" style="margin-bottom: 20px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Export Reports</h3>
+                        <button class="btn btn-success" onclick="exportPDF()">📄 Export as PDF</button>
+                        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="exportCSV()">📊 Export as CSV</button>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Analytics</h3>
+                        
+                        <!-- Lead Status Distribution Chart -->
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">Lead Status Distribution</h4>
+                            <canvas id="leadStatusChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        
+                        <!-- Lead Acquisition Timeline -->
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">Lead Acquisition Timeline</h4>
+                            <canvas id="leadTimelineChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        
+                        <!-- Service Type Distribution -->
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">Service Type Distribution</h4>
+                            <canvas id="serviceTypeChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        
+                        <!-- Meetings Timeline -->
+                        <div>
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">Meetings Timeline</h4>
+                            <canvas id="meetingsTimelineChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Users Section (Admin Only) -->
+                <div class="section" id="users">
+                    <button class="btn btn-success" onclick="showAddUserModal()">+ Add User</button>
+                    <div id="usersList" style="margin-top: 20px;">
+                        <!-- User cards will be added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Floating Action Button -->
+            <button class="fab" onclick="showAddLeadModal()">+</button>
+        </div>
+        
+        <!-- Add Lead Modal -->
+        <div class="modal" id="addLeadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add New Lead</h3>
+                    <button class="close-btn" onclick="closeModal('addLeadModal')">&times;</button>
+                </div>
+                <form id="addLeadForm">
+                    <div class="form-group">
+                        <label>Company Name*</label>
+                        <input type="text" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Person*</label>
+                        <input type="text" name="contact" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone*</label>
+                        <input type="tel" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Location*</label>
+                        <input type="text" name="location" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Client Type*</label>
+                        <select name="clientType" required>
+                            <option value="">Select Type</option>
+                            <option value="Builder">Builder</option>
+                            <option value="Contractor">Contractor</option>
+                            <option value="Architect">Architect</option>
+                            <option value="Developer">Developer</option>
+                            <option value="Corporate">Corporate</option>
+                            <option value="Government">Government</option>
+                            <option value="Individual">Individual</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Type*</label>
+                        <select name="serviceType" required>
+                            <option value="">Select Service</option>
+                            <option value="Tower Parking">Tower Parking System</option>
+                            <option value="Puzzle Parking">Hydraulic Puzzle Parking</option>
+                            <option value="Stack Parking">Stack Parking System</option>
+                            <option value="Rotary Parking">Rotary Parking System</option>
+                            <option value="Installation">Installation Service</option>
+                            <option value="Maintenance">Maintenance Service</option>
+                            <option value="Consultation">Consultation</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Project Size</label>
+                        <select name="projectSize">
+                            <option value="">Select Size</option>
+                            <option value="Small">Small (1-50 slots)</option>
+                            <option value="Medium">Medium (51-200 slots)</option>
+                            <option value="Large">Large (201-500 slots)</option>
+                            <option value="Enterprise">Enterprise (500+ slots)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget Range</label>
+                        <select name="budget">
+                            <option value="">Select Budget</option>
+                            <option value="< 10L">Less than 10 Lakhs</option>
+                            <option value="10-50L">10-50 Lakhs</option>
+                            <option value="50L-1Cr">50 Lakhs - 1 Crore</option>
+                            <option value="1-5Cr">1-5 Crores</option>
+                            <option value="> 5Cr">Above 5 Crores</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Lead Source</label>
+                        <select name="source">
+                            <option value="">Select Source</option>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Exhibition">Exhibition</option>
+                            <option value="Cold Call">Cold Call</option>
+                            <option value="Email Campaign">Email Campaign</option>
+                            <option value="Social Media">Social Media</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" onchange="toggleMeetingDate(this.value)">
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="meeting">Meeting Scheduled</option>
+                            <option value="proposal">Proposal Sent</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="closed">Closed</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="meetingDateGroup">
+                        <label>Meeting Date & Time</label>
+                        <input type="datetime-local" name="meetingDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="4" placeholder="Additional information about the lead..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Attachments</label>
+                        <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                            <p>📎 Click to upload files (PDF, Images)</p>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                        </div>
+                        <div class="file-list" id="fileList"></div>
+                    </div>
+                    <button type="submit" class="btn">Add Lead</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Edit Lead Modal -->
+        <div class="modal" id="editLeadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Lead</h3>
+                    <button class="close-btn" onclick="closeModal('editLeadModal')">&times;</button>
+                </div>
+                <form id="editLeadForm">
+                    <!-- Same fields as add form, will be populated dynamically -->
+                </form>
+            </div>
+        </div>
+        
+        <!-- Add User Modal -->
+        <div class="modal" id="addUserModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add New User</h3>
+                    <button class="close-btn" onclick="closeModal('addUserModal')">&times;</button>
+                </div>
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select name="role">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Add User</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- View Lead Modal -->
+        <div class="modal" id="viewLeadModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Lead Details</h3>
+                    <button class="close-btn" onclick="closeModal('viewLeadModal')">&times;</button>
+                </div>
+                <div id="leadDetails">
+                    <!-- Lead details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Installation Details Modal -->
+        <div class="modal" id="installationDetailsModal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 class="modal-title">Installation Details</h3>
+                    <button class="close-btn" onclick="closeModal('installationDetailsModal')">&times;</button>
+                </div>
+                <form id="installationDetailsForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Installation Date</label>
+                            <input type="date" name="installationDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Technician Name</label>
+                            <input type="text" name="technicianName" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Supervisor Name</label>
+                        <input type="text" name="supervisorName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Installation Address</label>
+                        <textarea name="installationAddress" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Equipment/Service Type</label>
+                            <select name="serviceType" required>
+                                <option value="">Select Service</option>
+                                <option value="Multi-Level Automated Parking System">Multi-Level Automated Parking System</option>
+                                <option value="Puzzle Parking System">Puzzle Parking System</option>
+                                <option value="Tower Parking System">Tower Parking System</option>
+                                <option value="Pit Type Parking System">Pit Type Parking System</option>
+                                <option value="Cantilever Parking System">Cantilever Parking System</option>
+                                <option value="Car Stacker System">Car Stacker System</option>
+                                <option value="Rotary Parking System">Rotary Parking System</option>
+                                <option value="Shuttle Parking System">Shuttle Parking System</option>
+                                <option value="AGV Parking System">AGV Parking System</option>
+                                <option value="Smart Parking Management Software">Smart Parking Management Software</option>
+                                <option value="Maintenance & Service">Maintenance & Service</option>
+                                <option value="System Upgrade">System Upgrade</option>
+                                <option value="Custom Parking Solution">Custom Parking Solution</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estimated Duration</label>
+                            <select name="estimatedDuration" required>
+                                <option value="">Select Duration</option>
+                                <option value="1-2 weeks">1-2 weeks</option>
+                                <option value="3-4 weeks">3-4 weeks</option>
+                                <option value="1-2 months">1-2 months</option>
+                                <option value="3-4 months">3-4 months</option>
+                                <option value="5-6 months">5-6 months</option>
+                                <option value="6+ months">6+ months</option>
+                                <option value="Maintenance (1-3 days)">Maintenance (1-3 days)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Work Description</label>
+                        <textarea name="workDescription" rows="4" placeholder="Detailed description of parking system installation work - e.g., foundation work, steel structure assembly, mechanical components installation, electrical wiring, control system setup, software configuration, testing..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Materials/Equipment List</label>
+                            <textarea name="materialsList" rows="3" placeholder="List of materials and equipment - e.g., steel platforms, hydraulic cylinders, motors, control panels, sensors, cables, software licenses..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Special Instructions</label>
+                            <textarea name="specialInstructions" rows="3" placeholder="Site-specific requirements, safety protocols, access restrictions, client coordination needs..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn">Save Installation Details</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Installation Completion Modal -->
+        <div class="modal" id="installationCompletionModal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 class="modal-title">Complete Installation</h3>
+                    <button class="close-btn" onclick="closeModal('installationCompletionModal')">&times;</button>
+                </div>
+                
+                <form id="installationCompletionForm">
+                    <div class="form-group">
+                        <label>Work Completion Summary</label>
+                        <textarea name="completionSummary" rows="4" placeholder="Describe the parking system installation completed - foundation work, structural assembly, mechanical installation, electrical connections, control system setup, software configuration, testing results, any challenges overcome..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Project Start Date</label>
+                            <input type="date" name="actualStartTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Project Completion Date</label>
+                            <input type="date" name="actualEndTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Materials & Components Used</label>
+                            <textarea name="materialsUsed" rows="3" placeholder="List actual materials used - steel platforms, hydraulic systems, motors, control panels, sensors, cables, software components, quantities..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>System Testing & Commissioning</label>
+                            <textarea name="testingResults" rows="3" placeholder="System testing results - mechanical operation, safety systems, control software, load testing, certification compliance, performance verification..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Supervisor Signature Section -->
+                    <div class="form-group">
+                        <label>Project Manager/Supervisor Signature</label>
+                        <div class="signature-container">
+                            <p>Project Manager/Supervisor: Sign below to certify parking system installation completion and quality assurance</p>
+                            <canvas id="supervisorSignaturePad" class="signature-pad" width="400" height="150"></canvas>
+                            <div class="signature-controls">
+                                <button type="button" class="btn btn-secondary" onclick="clearSignature('supervisorSignaturePad')">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Client Signature Section -->
+                    <div class="form-group">
+                        <label>Client Representative Information & Signature</label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Client Representative Name</label>
+                                <input type="text" name="clientName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Client Designation/Title</label>
+                                <input type="text" name="clientDesignation" placeholder="e.g., Facility Manager, Project Director, Building Owner">
+                            </div>
+                        </div>
+                        
+                        <div class="signature-container">
+                            <p>Client Representative: Sign below to acknowledge automated parking system installation completion, acceptance testing, and handover</p>
+                            <canvas id="clientSignaturePad" class="signature-pad" width="400" height="150"></canvas>
+                            <div class="signature-controls">
+                                <button type="button" class="btn btn-secondary" onclick="clearSignature('clientSignaturePad')">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Site Completion Image Capture Section -->
+                    <div class="form-group">
+                        <label>📸 Site Completion Image</label>
+                        <div class="image-capture-section">
+                            <p style="margin-bottom: 10px; color: #1a237e; font-weight: 500;">Capture a photo of the completed installation site</p>
+                            <input type="file" id="siteImageInput" class="camera-input" accept="image/*" capture="environment" onchange="handleImageCapture(event)">
+                            <button type="button" class="btn btn-success" onclick="document.getElementById('siteImageInput').click()">
+                                📷 Click Image
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearSiteImage()" style="display: none;" id="clearImageBtn">
+                                🗑️ Remove Image
+                            </button>
+                            <div id="imagePreview" class="image-preview" style="display: none;">
+                                <img id="previewImg" src="" alt="Site completion preview">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Additional Notes</label>
+                        <textarea name="additionalNotes" rows="3" placeholder="Additional notes - warranty information, training provided, maintenance schedule, follow-up requirements, spare parts delivered..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn">Complete Installation</button>
+                        <button type="button" class="btn btn-secondary" onclick="previewReceipt()">Preview Receipt</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Receipt Preview Modal -->
+        <div class="modal" id="receiptPreviewModal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 class="modal-title">Installation Completion Receipt</h3>
+                    <button class="close-btn" onclick="closeModal('receiptPreviewModal')">&times;</button>
+                </div>
+                
+                <div id="receiptContent" class="receipt-preview">
+                    <!-- Receipt content will be generated here -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="downloadReceipt()">📄 Download PDF</button>
+                    <button class="btn btn-secondary" onclick="printReceipt()">🖨️ Print</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Meeting Outcome Modal -->
+        <div class="modal" id="meetingOutcomeModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="meetingOutcomeTitle">Update Meeting Status</h3>
+                    <button class="close-btn" onclick="closeModal('meetingOutcomeModal')">&times;</button>
+                </div>
+                <form id="meetingOutcomeForm">
+                    <div class="form-group">
+                        <label>Outcome Notes</label>
+                        <textarea id="meetingNotes" name="meetingNotes" rows="3" placeholder="Enter details about the meeting outcome..." required></textarea>
+                    </div>
+                    
+                    <!-- Reschedule fields, shown only when rescheduled -->
+                    <div class="form-group hidden" id="rescheduleFields">
+                        <label>New Meeting Date & Time</label>
+                        <input type="datetime-local" id="newMeetingDate" name="newMeetingDate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Next Steps</label>
+                        <select name="nextStatus" id="nextStatus">
+                            <option value="proposal">Move to Proposal</option>
+                            <option value="negotiation">Move to Negotiation</option>
+                            <option value="closed">Close as Won</option>
+                            <option value="lost">Close as Lost</option>
+                            <option value="meeting">Keep in Meeting Status</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="updateMeetingBtn">Update Meeting</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWScTKIGLxxNi6bgKGRrrfCHdA--W-Dzk",
+            authDomain: "trivanta-leads.firebaseapp.com",
+            projectId: "trivanta-leads",
+            storageBucket: "trivanta-leads.firebasestorage.app",
+            messagingSenderId: "665778087013",
+            appId: "1:665778087013:web:e728dc7c97f1198704d28c",
+            measurementId: "G-0L9B205EQY"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        
+        // Global Variables
+        let currentUser = null;
+        let leads = [];
+        let users = [];
+        let activities = [];
+        let uploadedFiles = [];
+        let currentMeetingLeadId = null;
+        
+        // Check if meeting is in the past
+        function isMeetingPast(meetingDate) {
+            if (!meetingDate) return false;
+            const meetingTime = new Date(meetingDate).getTime();
+            const currentTime = new Date().getTime();
+            return meetingTime < currentTime;
+        }
+        
+        // Show Toast Notification
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, duration);
+        }
+        
+        // Login Handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Check for hardcoded admin
+            if (username === 'Siddhant' && password === '102005') {
+                currentUser = {
+                    username: 'Siddhant',
+                    role: 'admin',
+                    fullName: 'Siddhant (Admin)',
+                    uid: 'admin_siddhant'
+                };
+                loginSuccess();
+            } else {
+                // Check Firebase for other users
+                try {
+                    const userSnapshot = await db.collection('users')
+                        .where('username', '==', username)
+                        .where('password', '==', password)
+                        .get();
+                    
+                    if (!userSnapshot.empty) {
+                        currentUser = userSnapshot.docs[0].data();
+                        currentUser.uid = userSnapshot.docs[0].id;
+                        loginSuccess();
+                    } else {
+                        showToast('Invalid credentials!');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('Login failed. Please try again.');
+                }
+            }
+        });
+        
+        // Login Success Handler
+        function loginSuccess() {
+            // Save user to localStorage for session persistence
+            localStorage.setItem('trivantaUser', JSON.stringify(currentUser));
+            
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+            
+            // Hide admin features for non-admin users
+            if (currentUser.role !== 'admin') {
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+            
+            showToast(`Welcome, ${currentUser.fullName || currentUser.username}!`);
+            loadDashboard();
+        }
+        
+        // Logout Handler
+        function logout() {
+            // Clear user data from localStorage
+            localStorage.removeItem('trivantaUser');
+            
+            currentUser = null;
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('loginForm').reset();
+            showToast('Logged out successfully');
+        }
+        
+        // Show Section
+        function showSection(sectionId) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Load section-specific data
+            if (sectionId === 'leads') {
+                loadLeads();
+            } else if (sectionId === 'meetings') {
+                loadMeetings();
+            } else if (sectionId === 'installation') {
+                loadInstallations();
+            } else if (sectionId === 'users' && currentUser.role === 'admin') {
+                loadUsers();
+            } else if (sectionId === 'reports') {
+                initializeCharts();
+            }
+        }
+        
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                // Load leads
+                const leadsSnapshot = await db.collection('leads').get();
+                leads = leadsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Update stats
+                document.getElementById('totalLeads').textContent = leads.length;
+                
+                // Calculate new leads this month
+                const currentMonth = new Date().getMonth();
+                const newLeads = leads.filter(lead => {
+                    const leadDate = lead.createdAt?.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt);
+                    return leadDate.getMonth() === currentMonth;
+                });
+                document.getElementById('newLeads').textContent = newLeads.length;
+                
+                // Calculate active meetings
+                const activeMeetings = leads.filter(lead => lead.status === 'meeting').length;
+                document.getElementById('activeMeetings').textContent = activeMeetings;
+                
+                // Calculate conversion rate
+                const closedLeads = leads.filter(lead => lead.status === 'closed').length;
+                const conversionRate = leads.length > 0 ? Math.round((closedLeads / leads.length) * 100) : 0;
+                document.getElementById('conversionRate').textContent = `${conversionRate}%`;
+                
+                // Initialize analytics charts
+                initializeCharts();
+                
+                // Load recent activities
+                loadRecentActivities();
+                
+                // Initialize charts if on reports section
+                if (document.querySelector('.nav-tab[onclick="showSection(\'reports\')"]').classList.contains('active')) {
+                    initializeCharts();
+                }
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showToast('Error loading dashboard data');
+            }
+        }
+        
+        // Load Recent Activities
+        async function loadRecentActivities() {
+            try {
+                const activitiesSnapshot = await db.collection('activities')
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+                
+                const timeline = document.getElementById('recentActivities');
+                timeline.innerHTML = '';
+                
+                activitiesSnapshot.forEach(doc => {
+                    const activity = doc.data();
+                    const date = activity.timestamp?.toDate ? activity.timestamp.toDate() : new Date(activity.timestamp);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'timeline-item';
+                    item.innerHTML = `
+                        <div class="timeline-content">
+                            <div class="timeline-date">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+                            <div class="timeline-text">${activity.description}</div>
+                        </div>
+                    `;
+                    timeline.appendChild(item);
+                });
+                
+                if (activitiesSnapshot.empty) {
+                    timeline.innerHTML = '<p style="color: #999;">No recent activities</p>';
+                }
+            } catch (error) {
+                console.error('Error loading activities:', error);
+            }
+        }
+        
+        // Add Activity Log
+        async function logActivity(description) {
+            try {
+                await db.collection('activities').add({
+                    description: description,
+                    user: currentUser.username,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                console.error('Error logging activity:', error);
+            }
+        }
+        
+        // Load Leads
+        async function loadLeads(filter = 'all') {
+            try {
+                const leadsList = document.getElementById('leadsList');
+                leadsList.innerHTML = '<div class="spinner"></div>';
+                
+                // Get all leads first
+                const leadsSnapshot = await db.collection('leads').get();
+                
+                // Convert to array and filter if needed
+                let leadsArray = [];
+                leadsSnapshot.forEach(doc => {
+                    const lead = doc.data();
+                    lead.id = doc.id;
+                    leadsArray.push(lead);
+                });
+                
+                // Apply filter
+                if (filter !== 'all') {
+                    leadsArray = leadsArray.filter(lead => lead.status === filter);
+                }
+                
+                // Sort by creation date (newest first)
+                leadsArray.sort((a, b) => {
+                    const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+                    const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+                    return dateB - dateA;
+                });
+                
+                leadsList.innerHTML = '';
+                
+                if (leadsArray.length === 0) {
+                    leadsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No leads found</p>';
+                } else {
+                    leadsArray.forEach(lead => {
+                        const leadCard = createLeadCard(lead.id, lead);
+                        leadsList.appendChild(leadCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading leads:', error);
+                document.getElementById('leadsList').innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Error loading leads. Please refresh.</p>';
+                showToast('Error loading leads');
+            }
+        }
+        
+        // Create Lead Card
+        function createLeadCard(id, lead) {
+            const card = document.createElement('div');
+            card.className = 'lead-card';
+            
+            const statusClass = `status-${lead.status || 'new'}`;
+            const priorityColor = lead.priority === 'Urgent' ? '#f44336' : 
+                               lead.priority === 'High' ? '#ff9800' : 
+                               lead.priority === 'Medium' ? '#2196f3' : '#9e9e9e';
+            
+            card.innerHTML = `
+                <div class="lead-header">
+                    <div>
+                        <div class="lead-title">${lead.company}</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                            ${lead.contact} • ${lead.location}
+                        </div>
+                    </div>
+                    <span class="lead-status ${statusClass}">${(lead.status || 'new').toUpperCase()}</span>
+                </div>
+                <div class="lead-info">
+                    <div class="lead-info-item">
+                        📱 ${lead.phone}
+                    </div>
+                    ${lead.email ? `<div class="lead-info-item">✉️ ${lead.email}</div>` : ''}
+                    <div class="lead-info-item">
+                        🏢 ${lead.clientType} • ${lead.serviceType}
+                    </div>
+                    ${lead.projectSize ? `<div class="lead-info-item">📊 Project Size: ${lead.projectSize}</div>` : ''}
+                    ${lead.budget ? `<div class="lead-info-item">💰 Budget: ${lead.budget}</div>` : ''}
+                    ${lead.meetingDate ? 
+                        `<div class="lead-info-item">
+                            📅 Meeting: ${new Date(lead.meetingDate).toLocaleString()}
+                            ${isMeetingPast(lead.meetingDate) && lead.status === 'meeting' && !lead.meetingOutcome ? 
+                                `<div class="meeting-past">
+                                    <div style="font-weight: 500;">This meeting has passed</div>
+                                    <div class="meeting-actions">
+                                        <button class="meeting-btn meeting-btn-done" onclick="updateMeetingOutcome('${id}', 'done')">✓ Mark Complete</button>
+                                        <button class="meeting-btn meeting-btn-cancel" onclick="updateMeetingOutcome('${id}', 'cancelled')">✕ Mark Cancelled</button>
+                                        <button class="meeting-btn meeting-btn-reschedule" onclick="updateMeetingOutcome('${id}', 'rescheduled')">↻ Reschedule</button>
+                                    </div>
+                                </div>` 
+                            : ''}
+                            ${lead.meetingOutcome ? 
+                                `<div class="meeting-outcome ${lead.meetingOutcome}">
+                                    <strong>${lead.meetingOutcome === 'done' ? '✓ Meeting Completed' : 
+                                              lead.meetingOutcome === 'cancelled' ? '✕ Meeting Cancelled' : 
+                                              '↻ Meeting Rescheduled'}</strong>
+                                    ${lead.meetingNotes ? `<div>${lead.meetingNotes}</div>` : ''}
+                                    ${lead.meetingOutcome === 'rescheduled' && lead.newMeetingDate ? 
+                                        `<div>New date: ${new Date(lead.newMeetingDate).toLocaleString()}</div>` : ''}
+                                </div>`
+                            : ''}
+                        </div>` 
+                    : ''}
+                    <div class="lead-info-item" style="color: ${priorityColor};">
+                        ⚡ Priority: ${lead.priority || 'Medium'}
+                    </div>
+                </div>
+                <div class="lead-actions">
+                    <button class="action-btn btn-secondary" onclick="viewLead('${id}')">View</button>
+                    <button class="action-btn btn-warning" onclick="editLead('${id}')">Edit</button>
+                    <button class="action-btn btn-danger" onclick="deleteLead('${id}')">Delete</button>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Filter Leads
+        function filterLeads(status, event) {
+            document.querySelectorAll('.filter-chips .chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find and activate the chip programmatically
+                document.querySelectorAll('.filter-chips .chip').forEach(chip => {
+                    if (chip.textContent.toLowerCase() === status.toLowerCase() || 
+                        (status === 'all' && chip.textContent === 'All')) {
+                        chip.classList.add('active');
+                    }
+                });
+            }
+            loadLeads(status);
+        }
+        
+        // Search Leads
+        document.getElementById('searchLeads')?.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const leadCards = document.querySelectorAll('.lead-card');
+            
+            leadCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+        
+        // Show Add Lead Modal
+        function showAddLeadModal() {
+            document.getElementById('addLeadModal').style.display = 'block';
+        }
+        
+        // Show Edit Lead Modal
+        async function editLead(leadId) {
+            try {
+                const leadDoc = await db.collection('leads').doc(leadId).get();
+                const lead = leadDoc.data();
+                
+                const form = document.getElementById('editLeadForm');
+                form.innerHTML = document.getElementById('addLeadForm').innerHTML;
+                
+                // Populate form with lead data
+                Object.keys(lead).forEach(key => {
+                    const input = form.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        if (input.type === 'datetime-local' && lead[key]) {
+                            // Handle timestamp conversion for meeting date
+                            const date = lead[key].toDate ? lead[key].toDate() : new Date(lead[key]);
+                            input.value = date.toISOString().slice(0, 16);
+                        } else {
+                            input.value = lead[key] || '';
+                        }
+                    }
+                });
+                
+                // Handle conditional meeting date display
+                const statusSelect = form.querySelector('[name="status"]');
+                if (statusSelect) {
+                    // Add onchange handler to the new form
+                    statusSelect.onchange = function() { toggleMeetingDate(this.value); };
+                    // Show/hide meeting date based on current status
+                    toggleMeetingDate(statusSelect.value);
+                }
+                
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const leadData = Object.fromEntries(formData.entries());
+                    
+                    // Convert meeting date to timestamp if provided
+                    if (leadData.meetingDate) {
+                        leadData.meetingDate = firebase.firestore.Timestamp.fromDate(new Date(leadData.meetingDate));
+                    }
+                    
+                    try {
+                        await db.collection('leads').doc(leadId).update({
+                            ...leadData,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updatedBy: currentUser.username
+                        });
+                        
+                        showToast('Lead updated successfully');
+                        closeModal('editLeadModal');
+                        loadLeads();
+                        logActivity(`Updated lead: ${leadData.company}`);
+                    } catch (error) {
+                        console.error('Error updating lead:', error);
+                        showToast('Error updating lead');
+                    }
+                };
+                
+                document.getElementById('editLeadModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading lead:', error);
+                showToast('Error loading lead details');
+            }
+        }
+        
+        // View Lead Details
+        async function viewLead(leadId) {
+            try {
+                const leadDoc = await db.collection('leads').doc(leadId).get();
+                const lead = leadDoc.data();
+                
+                const detailsDiv = document.getElementById('leadDetails');
+                detailsDiv.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Company Information</h4>
+                            <p><strong>Company:</strong> ${lead.company}</p>
+                            <p><strong>Contact Person:</strong> ${lead.contact}</p>
+                            <p><strong>Phone:</strong> ${lead.phone}</p>
+                            ${lead.email ? `<p><strong>Email:</strong> ${lead.email}</p>` : ''}
+                            <p><strong>Location:</strong> ${lead.location}</p>
+                        </div>
+                        
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Project Details</h4>
+                            <p><strong>Client Type:</strong> ${lead.clientType}</p>
+                            <p><strong>Service Type:</strong> ${lead.serviceType}</p>
+                            ${lead.projectSize ? `<p><strong>Project Size:</strong> ${lead.projectSize}</p>` : ''}
+                            ${lead.budget ? `<p><strong>Budget Range:</strong> ${lead.budget}</p>` : ''}
+                            ${lead.source ? `<p><strong>Lead Source:</strong> ${lead.source}</p>` : ''}
+                        </div>
+                        
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Status & Schedule</h4>
+                            <p><strong>Status:</strong> ${lead.status.toUpperCase()}</p>
+                            <p><strong>Priority:</strong> ${lead.priority || 'Medium'}</p>
+                            ${lead.meetingDate ? `<p><strong>Meeting Date:</strong> ${new Date(lead.meetingDate).toLocaleString()}</p>` : ''}
+                        </div>
+                        
+                        ${lead.notes ? `
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Notes</h4>
+                            <p>${lead.notes}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="background: var(--light); padding: 15px; border-radius: 10px;">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">Metadata</h4>
+                            <p><strong>Created:</strong> ${lead.createdAt ? new Date(lead.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</p>
+                            <p><strong>Created By:</strong> ${lead.createdBy || 'Unknown'}</p>
+                            ${lead.updatedAt ? `<p><strong>Last Updated:</strong> ${new Date(lead.updatedAt.seconds * 1000).toLocaleString()}</p>` : ''}
+                            ${lead.updatedBy ? `<p><strong>Updated By:</strong> ${lead.updatedBy}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('viewLeadModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error viewing lead:', error);
+                showToast('Error loading lead details');
+            }
+        }
+        
+        // Delete Lead
+        async function deleteLead(leadId) {
+            if (!confirm('Are you sure you want to delete this lead?')) return;
+            
+            try {
+                const leadDoc = await db.collection('leads').doc(leadId).get();
+                const leadName = leadDoc.data().company;
+                
+                await db.collection('leads').doc(leadId).delete();
+                showToast('Lead deleted successfully');
+                loadLeads();
+                logActivity(`Deleted lead: ${leadName}`);
+            } catch (error) {
+                console.error('Error deleting lead:', error);
+                showToast('Error deleting lead');
+            }
+        }
+        
+        // Add Lead Form Handler
+        document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const leadData = Object.fromEntries(formData.entries());
+            
+            // Convert meeting date to timestamp if provided
+            if (leadData.meetingDate) {
+                leadData.meetingDate = firebase.firestore.Timestamp.fromDate(new Date(leadData.meetingDate));
+            }
+            
+            try {
+                // Upload files if any
+                let fileURLs = [];
+                if (uploadedFiles.length > 0) {
+                    for (const file of uploadedFiles) {
+                        const storageRef = storage.ref(`leads/${Date.now()}_${file.name}`);
+                        const snapshot = await storageRef.put(file);
+                        const url = await snapshot.ref.getDownloadURL();
+                        fileURLs.push({ name: file.name, url: url });
+                    }
+                }
+                
+                await db.collection('leads').add({
+                    ...leadData,
+                    files: fileURLs,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: currentUser.username
+                });
+                
+                showToast('Lead added successfully');
+                closeModal('addLeadModal');
+                e.target.reset();
+                uploadedFiles = [];
+                document.getElementById('fileList').innerHTML = '';
+                loadDashboard();
+                logActivity(`Added new lead: ${leadData.company}`);
+            } catch (error) {
+                console.error('Error adding lead:', error);
+                showToast('Error adding lead');
+            }
+        });
+        
+        // File Upload Handler
+        document.getElementById('fileInput')?.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            uploadedFiles = [...uploadedFiles, ...files];
+            
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            uploadedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index})" style="background: none; border: none; color: var(--danger); cursor: pointer;">✖</button>
+                `;
+                fileList.appendChild(item);
+            });
+        });
+        
+        // Remove File
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            document.getElementById('fileInput').value = '';
+            
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            uploadedFiles.forEach((file, idx) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${idx})" style="background: none; border: none; color: var(--danger); cursor: pointer;">✖</button>
+                `;
+                fileList.appendChild(item);
+            });
+        }
+        
+        // Load Meetings
+        async function loadMeetings() {
+            try {
+                const meetingsSnapshot = await db.collection('leads')
+                    .where('meetingDate', '!=', '')
+                    .orderBy('meetingDate')
+                    .get();
+                
+                const meetingsList = document.getElementById('meetingsList');
+                meetingsList.innerHTML = '';
+                
+                meetingsSnapshot.forEach(doc => {
+                    const lead = doc.data();
+                    if (lead.meetingDate) {
+                        const meetingDate = new Date(lead.meetingDate);
+                        const today = new Date();
+                        const isUpcoming = meetingDate > today;
+                        
+                        const card = document.createElement('div');
+                        card.className = 'lead-card';
+                        card.style.borderLeft = isUpcoming ? '4px solid var(--success)' : '4px solid var(--danger)';
+                        
+                        card.innerHTML = `
+                            <div class="lead-header">
+                                <div>
+                                    <div class="lead-title">${lead.company}</div>
+                                    <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                                        ${lead.contact} • ${lead.location}
+                                    </div>
+                                </div>
+                                <span class="lead-status ${isUpcoming ? 'status-meeting' : 'status-closed'}">
+                                    ${isUpcoming ? 'UPCOMING' : 'PAST'}
+                                </span>
+                            </div>
+                            <div class="lead-info">
+                                <div class="lead-info-item" style="font-size: 16px; font-weight: bold; color: var(--primary);">
+                                    📅 ${meetingDate.toLocaleDateString()} at ${meetingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                                <div class="lead-info-item">
+                                    📱 ${lead.phone}
+                                </div>
+                                <div class="lead-info-item">
+                                    🏢 ${lead.clientType} • ${lead.serviceType}
+                                </div>
+                            </div>
+                            <div class="lead-actions">
+                                <button class="action-btn btn-secondary" onclick="viewLead('${doc.id}')">View Details</button>
+                                ${isUpcoming ? 
+                                    `<button class="action-btn btn-warning" onclick="updateMeetingOutcome('${doc.id}', 'rescheduled')">Reschedule</button>` : 
+                                    lead.meetingOutcome ? 
+                                        `<div class="meeting-outcome ${lead.meetingOutcome}" style="margin-top: 0">
+                                            <strong>${lead.meetingOutcome === 'done' ? '✓ Meeting Completed' : 
+                                                    lead.meetingOutcome === 'cancelled' ? '✕ Meeting Cancelled' : 
+                                                    '↻ Meeting Rescheduled'}</strong>
+                                            ${lead.meetingOutcome === 'rescheduled' && lead.newMeetingDate ? 
+                                                `<div>New date: ${new Date(lead.newMeetingDate).toLocaleString()}</div>` : ''}
+                                         </div>` :
+                                        `<div class="meeting-actions" style="margin-top: 0">
+                                            <button class="meeting-btn meeting-btn-done" onclick="updateMeetingOutcome('${doc.id}', 'done')">✓ Complete</button>
+                                            <button class="meeting-btn meeting-btn-cancel" onclick="updateMeetingOutcome('${doc.id}', 'cancelled')">✕ Cancel</button>
+                                            <button class="meeting-btn meeting-btn-reschedule" onclick="updateMeetingOutcome('${doc.id}', 'rescheduled')">↻ Reschedule</button>
+                                         </div>`
+                                }
+                            </div>
+                        `;
+                        
+                        meetingsList.appendChild(card);
+                    }
+                });
+                
+                if (meetingsSnapshot.empty) {
+                    meetingsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No scheduled meetings</p>';
+                }
+            } catch (error) {
+                console.error('Error loading meetings:', error);
+                showToast('Error loading meetings');
+            }
+        }
+        
+        // Show Add User Modal
+        function showAddUserModal() {
+            if (currentUser.role !== 'admin') {
+                showToast('Only admins can add users');
+                return;
+            }
+            document.getElementById('addUserModal').style.display = 'block';
+        }
+        
+        // Add User Form Handler
+        document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const userData = Object.fromEntries(formData.entries());
+            
+            try {
+                await db.collection('users').add({
+                    ...userData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: currentUser.username
+                });
+                
+                showToast('User added successfully');
+                closeModal('addUserModal');
+                e.target.reset();
+                loadUsers();
+                logActivity(`Added new user: ${userData.fullName}`);
+            } catch (error) {
+                console.error('Error adding user:', error);
+                showToast('Error adding user');
+            }
+        });
+        
+        // Load Users
+        async function loadUsers() {
+            try {
+                const usersSnapshot = await db.collection('users').get();
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = '';
+                
+                // Add hardcoded admin
+                const adminCard = document.createElement('div');
+                adminCard.className = 'lead-card';
+                adminCard.innerHTML = `
+                    <div class="lead-header">
+                        <div>
+                            <div class="lead-title">Siddhant</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                                Username: Siddhant • Super Admin
+                            </div>
+                        </div>
+                        <span class="lead-status status-meeting">ADMIN</span>
+                    </div>
+                    <div class="lead-info">
+                        <div class="lead-info-item">
+                            👤 System Administrator
+                        </div>
+                    </div>
+                `;
+                usersList.appendChild(adminCard);
+                
+                usersSnapshot.forEach(doc => {
+                    const user = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'lead-card';
+                    
+                    card.innerHTML = `
+                        <div class="lead-header">
+                            <div>
+                                <div class="lead-title">${user.fullName}</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                                    Username: ${user.username}
+                                </div>
+                            </div>
+                            <span class="lead-status ${user.role === 'admin' ? 'status-meeting' : 'status-new'}">
+                                ${user.role.toUpperCase()}
+                            </span>
+                        </div>
+                        <div class="lead-info">
+                            <div class="lead-info-item">
+                                ✉️ ${user.email}
+                            </div>
+                            ${user.phone ? `<div class="lead-info-item">📱 ${user.phone}</div>` : ''}
+                        </div>
+                        <div class="lead-actions">
+                            <button class="action-btn btn-danger" onclick="deleteUser('${doc.id}')">Delete</button>
+                        </div>
+                    `;
+                    
+                    usersList.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showToast('Error loading users');
+            }
+        }
+        
+        // Delete User
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+            
+            try {
+                await db.collection('users').doc(userId).delete();
+                showToast('User deleted successfully');
+                loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showToast('Error deleting user');
+            }
+        }
+        
+        // Export to PDF
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add logo and header
+            doc.setFontSize(20);
+            doc.setTextColor(26, 35, 126);
+            doc.text('Trivanta Edge', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Lead Tracking Report', 105, 28, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text('Parking, Perfected.', 105, 35, { align: 'center' });
+            
+            // Add generation date
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 45, { align: 'center' });
+            doc.text(`Generated By: ${currentUser.fullName || currentUser.username}`, 105, 50, { align: 'center' });
+            
+            // Add summary stats
+            doc.setFontSize(14);
+            doc.setTextColor(26, 35, 126);
+            doc.text('Summary Statistics', 20, 65);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`Total Leads: ${leads.length}`, 20, 75);
+            doc.text(`New Leads (This Month): ${document.getElementById('newLeads').textContent}`, 20, 82);
+            doc.text(`Active Meetings: ${document.getElementById('activeMeetings').textContent}`, 20, 89);
+            doc.text(`Conversion Rate: ${document.getElementById('conversionRate').textContent}`, 20, 96);
+            
+            // Add leads table
+            const tableData = leads.map(lead => [
+                lead.company,
+                lead.contact,
+                lead.location,
+                lead.serviceType,
+                lead.status.toUpperCase(),
+                lead.priority || 'Medium'
+            ]);
+            
+            doc.autoTable({
+                startY: 110,
+                head: [['Company', 'Contact', 'Location', 'Service', 'Status', 'Priority']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [26, 35, 126] },
+                styles: { fontSize: 8 }
+            });
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+                doc.text('© Trivanta Edge - Automated Parking Solutions', 105, 295, { align: 'center' });
+            }
+            
+            // Save the PDF
+            doc.save(`TrivantaEdge_LeadReport_${new Date().getTime()}.pdf`);
+            showToast('PDF exported successfully');
+            logActivity('Exported lead report as PDF');
+        }
+        
+        // Load CSV
+        function exportCSV() {
+            let csv = 'Company,Contact Person,Phone,Email,Location,Client Type,Service Type,Project Size,Budget,Status,Priority,Meeting Date,Notes\n';
+            
+            leads.forEach(lead => {
+                csv += `"${lead.company}","${lead.contact}","${lead.phone}","${lead.email || ''}","${lead.location}","${lead.clientType}","${lead.serviceType}","${lead.projectSize || ''}","${lead.budget || ''}","${lead.status}","${lead.priority || 'Medium'}","${lead.meetingDate || ''}","${lead.notes || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TrivantaEdge_Leads_${new Date().getTime()}.csv`;
+            a.click();
+            
+            showToast('CSV exported successfully');
+            logActivity('Exported lead report as CSV');
+        }
+        
+        // ==================== ANALYTICS FUNCTIONS ====================
+        
+        // Chart instances for reuse
+        let statusChart, timelineChart, serviceChart, meetingsChart;
+        let leadStatusChart = null;
+        let leadTimelineChart = null;
+        let serviceTypeChart = null;
+        let meetingsTimelineChart = null;
+        
+        // Initialize all analytics charts
+        function initializeCharts() {
+            if (!leads || leads.length === 0) {
+                console.log('No lead data available for charts');
+                return;
+            }
+            
+            // Initialize all charts
+            initializeLeadStatusChart();
+            initializeLeadTimelineChart();
+            initializeServiceTypeChart();
+            initializeMeetingsTimelineChart();
+        }
+        
+        // Lead Status Distribution Chart (Pie/Doughnut)
+        function initializeLeadStatusChart() {
+            const ctx = document.getElementById('leadStatusChart').getContext('2d');
+            
+            // Count leads by status
+            const statusCounts = {};
+            leads.forEach(lead => {
+                const status = lead.status || 'new';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+            
+            // Prepare data for chart
+            const labels = Object.keys(statusCounts).map(status => {
+                const capitalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
+                return capitalizedStatus;
+            });
+            
+            const data = Object.values(statusCounts);
+            
+            // Define colors for each status
+            const colors = {
+                'new': '#3949ab',      // Primary blue
+                'contacted': '#7986cb', // Light blue
+                'meeting': '#4caf50',  // Green
+                'proposal': '#ff9800', // Orange
+                'negotiation': '#ff5722', // Deep orange
+                'closed': '#4caf50',   // Green
+                'lost': '#f44336'      // Red
+            };
+            
+            const backgroundColors = Object.keys(statusCounts).map(status => colors[status] || '#9e9e9e');
+            
+            // Destroy existing chart if it exists
+            if (leadStatusChart) {
+                leadStatusChart.destroy();
+            }
+            
+            // Create new chart
+            leadStatusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: '#ffffff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Lead Acquisition Timeline Chart (Line)
+        function initializeLeadTimelineChart() {
+            const ctx = document.getElementById('leadTimelineChart').getContext('2d');
+            
+            // Group leads by month
+            const leadsByMonth = {};
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            leads.forEach(lead => {
+                const leadDate = lead.createdAt?.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt || Date.now());
+                const monthYear = `${monthNames[leadDate.getMonth()]} ${leadDate.getFullYear()}`;
+                
+                leadsByMonth[monthYear] = (leadsByMonth[monthYear] || 0) + 1;
+            });
+            
+            // Sort months chronologically
+            const sortedMonths = Object.keys(leadsByMonth).sort((a, b) => {
+                const monthA = monthNames.indexOf(a.split(' ')[0]);
+                const yearA = parseInt(a.split(' ')[1]);
+                const monthB = monthNames.indexOf(b.split(' ')[0]);
+                const yearB = parseInt(b.split(' ')[1]);
+                
+                return yearA === yearB ? monthA - monthB : yearA - yearB;
+            });
+            
+            // Prepare data for chart
+            const labels = sortedMonths;
+            const data = sortedMonths.map(month => leadsByMonth[month]);
+            
+            // Destroy existing chart if it exists
+            if (leadTimelineChart) {
+                leadTimelineChart.destroy();
+            }
+            
+            // Create new chart
+            leadTimelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'New Leads',
+                        data: data,
+                        backgroundColor: 'rgba(26, 35, 126, 0.2)',
+                        borderColor: '#1a237e',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#3949ab',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Service Type Distribution Chart (Bar)
+        function initializeServiceTypeChart() {
+            const ctx = document.getElementById('serviceTypeChart').getContext('2d');
+            
+            // Count leads by service type
+            const serviceTypeCounts = {};
+            leads.forEach(lead => {
+                const serviceType = lead.serviceType || 'Other';
+                serviceTypeCounts[serviceType] = (serviceTypeCounts[serviceType] || 0) + 1;
+            });
+            
+            // Prepare data for chart
+            const labels = Object.keys(serviceTypeCounts);
+            const data = Object.values(serviceTypeCounts);
+            
+            // Create gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(92, 107, 192, 0.8)');
+            gradient.addColorStop(1, 'rgba(92, 107, 192, 0.2)');
+            
+            // Destroy existing chart if it exists
+            if (serviceTypeChart) {
+                serviceTypeChart.destroy();
+            }
+            
+            // Create new chart
+            serviceTypeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Service Types',
+                        data: data,
+                        backgroundColor: gradient,
+                        borderColor: '#3949ab',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Meetings Timeline Chart (Line)
+        function initializeMeetingsTimelineChart() {
+            const ctx = document.getElementById('meetingsTimelineChart').getContext('2d');
+            
+            // Filter leads with meetings
+            const leadsWithMeetings = leads.filter(lead => lead.meetingDate);
+            
+            // Group meetings by date
+            const meetingsByDate = {};
+            const today = new Date();
+            
+            leadsWithMeetings.forEach(lead => {
+                const meetingDate = lead.meetingDate?.toDate ? lead.meetingDate.toDate() : new Date(lead.meetingDate);
+                const dateStr = meetingDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                
+                // Categorize as past or upcoming
+                const isPast = meetingDate < today;
+                if (!meetingsByDate[dateStr]) {
+                    meetingsByDate[dateStr] = { past: 0, upcoming: 0, date: meetingDate };
+                }
+                
+                if (isPast) {
+                    meetingsByDate[dateStr].past++;
+                } else {
+                    meetingsByDate[dateStr].upcoming++;
+                }
+            });
+            
+            // Sort dates chronologically
+            const sortedDates = Object.keys(meetingsByDate).sort();
+            
+            // Prepare data for chart
+            const labels = sortedDates.map(date => {
+                const d = new Date(date);
+                return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+            });
+            
+            const pastData = sortedDates.map(date => meetingsByDate[date].past);
+            const upcomingData = sortedDates.map(date => meetingsByDate[date].upcoming);
+            
+            // Destroy existing chart if it exists
+            if (meetingsTimelineChart) {
+                meetingsTimelineChart.destroy();
+            }
+            
+            // Create new chart
+            meetingsTimelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Past Meetings',
+                            data: pastData,
+                            backgroundColor: 'rgba(244, 67, 54, 0.2)',
+                            borderColor: '#f44336',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            fill: true
+                        },
+                        {
+                            label: 'Upcoming Meetings',
+                            data: upcomingData,
+                            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                            borderColor: '#4caf50',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==================== INSTALLATION FUNCTIONS ====================
+        
+        let installations = [];
+        let currentInstallation = null;
+        let supervisorSignaturePad = null;
+        let clientSignaturePad = null;
+
+        // Load Installations
+        async function loadInstallations() {
+            try {
+                const installationsSnapshot = await db.collection('installations').get();
+                installations = installationsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Load leads that are closed but don't have installation scheduled yet
+                const leadsSnapshot = await db.collection('leads').where('status', '==', 'closed').get();
+                const installationLeads = [];
+                
+                leadsSnapshot.docs.forEach(doc => {
+                    const leadData = { id: doc.id, ...doc.data() };
+                    // Only add if no installation exists for this lead
+                    const hasInstallation = installations.some(inst => inst.leadId === leadData.id);
+                    if (!hasInstallation && !leadData.installationScheduled) {
+                        installationLeads.push({
+                            ...leadData,
+                            isLead: true
+                        });
+                    }
+                });
+                
+                renderInstallations([...installations, ...installationLeads]);
+            } catch (error) {
+                console.error('Error loading installations:', error);
+                showToast('Error loading installations');
+            }
+        }
+
+        // Render Installations
+        function renderInstallations(installationsToRender = installations) {
+            const installationsList = document.getElementById('installationsList');
+            
+            if (installationsToRender.length === 0) {
+                installationsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #999;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔧</div>
+                        <p>No installations found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            installationsList.innerHTML = installationsToRender.map(installation => {
+                const status = installation.isLead ? 'scheduled' : (installation.status || 'scheduled');
+                const statusClass = status.replace('-', '');
+                
+                return `
+                    <div class="installation-card ${statusClass}">
+                        <div class="installation-header">
+                            <div>
+                                <div class="installation-title">
+                                    ${installation.company || installation.clientName || 'Installation Project'}
+                                </div>
+                                <div class="installation-date">
+                                    ${installation.installationDate ? 
+                                        new Date(installation.installationDate).toLocaleDateString() : 
+                                        'Date TBD'
+                                    }
+                                </div>
+                            </div>
+                            <div class="installation-status ${statusClass}">
+                                ${status.replace('-', ' ')}
+                            </div>
+                        </div>
+                        
+                        <div class="installation-info">
+                            ${installation.contact ? `<div class="installation-info-item">👤 Contact: ${installation.contact}</div>` : ''}
+                            ${installation.phone ? `<div class="installation-info-item">📱 Phone: ${installation.phone}</div>` : ''}
+                            ${installation.serviceType ? `<div class="installation-info-item">🔧 Service: ${installation.serviceType}</div>` : ''}
+                            ${installation.technicianName ? `<div class="installation-info-item">👨‍🔧 Technician: ${installation.technicianName}</div>` : ''}
+                            ${installation.workDescription ? `<div class="installation-info-item">📝 Work: ${installation.workDescription.substring(0, 100)}${installation.workDescription.length > 100 ? '...' : ''}</div>` : ''}
+                        </div>
+                        
+                        <div class="installation-actions">
+                            ${installation.isLead ? 
+                                `<button class="btn btn-primary" onclick="showInstallationDetailsModal('${installation.id}', true)">📋 Schedule Installation</button>` :
+                                `<button class="btn btn-secondary" onclick="showInstallationDetailsModal('${installation.id}', false)">👁️ View Details</button>`
+                            }
+                            ${status === 'scheduled' || status === 'in-progress' ? 
+                                `<button class="btn btn-success" onclick="showInstallationCompletionModal('${installation.id}')">✅ Complete Installation</button>` : ''
+                            }
+                            ${status === 'completed' ? 
+                                `<button class="btn" onclick="viewInstallationReceipt('${installation.id}')">📄 View Receipt</button>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter Installations
+        function filterInstallations(status, event) {
+            // Update active chip
+            document.querySelectorAll('#installation .chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter installations
+            let filtered = installations;
+            if (status !== 'all') {
+                filtered = installations.filter(installation => 
+                    (installation.status || 'scheduled') === status
+                );
+            }
+            
+            renderInstallations(filtered);
+        }
+
+        // Show Installation Details Modal
+        function showInstallationDetailsModal(installationId, isNewFromLead = false) {
+            currentInstallation = isNewFromLead ? 
+                leads.find(lead => lead.id === installationId) :
+                installations.find(installation => installation.id === installationId);
+            
+            const form = document.getElementById('installationDetailsForm');
+            const modal = document.getElementById('installationDetailsModal');
+            
+            if (isNewFromLead) {
+                // Pre-fill form with lead data
+                form.installationDate.value = '';
+                form.technicianName.value = '';
+                form.supervisorName.value = '';
+                form.installationAddress.value = currentInstallation.location || '';
+                form.serviceType.value = currentInstallation.serviceType || '';
+                form.estimatedDuration.value = '';
+                form.workDescription.value = currentInstallation.notes || '';
+                form.materialsList.value = '';
+                form.specialInstructions.value = '';
+                form.status.value = 'scheduled';
+            } else {
+                // Fill form with existing installation data
+                form.installationDate.value = currentInstallation.installationDate || '';
+                form.technicianName.value = currentInstallation.technicianName || '';
+                form.supervisorName.value = currentInstallation.supervisorName || '';
+                form.installationAddress.value = currentInstallation.installationAddress || '';
+                form.serviceType.value = currentInstallation.serviceType || '';
+                form.estimatedDuration.value = currentInstallation.estimatedDuration || '';
+                form.workDescription.value = currentInstallation.workDescription || '';
+                form.materialsList.value = currentInstallation.materialsList || '';
+                form.specialInstructions.value = currentInstallation.specialInstructions || '';
+                form.status.value = currentInstallation.status || 'scheduled';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        // Show Installation Completion Modal
+        function showInstallationCompletionModal(installationId) {
+            currentInstallation = installations.find(installation => installation.id === installationId);
+            
+            if (!currentInstallation) {
+                showToast('Installation not found');
+                return;
+            }
+            
+            const form = document.getElementById('installationCompletionForm');
+            
+            // Initialize signature pads
+            setTimeout(() => {
+                initializeSignaturePads();
+            }, 100);
+            
+            // Pre-fill some data
+            form.clientName.value = currentInstallation.clientName || currentInstallation.contact || '';
+            
+            document.getElementById('installationCompletionModal').style.display = 'block';
+        }
+
+        // Initialize Signature Pads
+        function initializeSignaturePads() {
+            supervisorSignaturePad = new SignaturePad(document.getElementById('supervisorSignaturePad'));
+            clientSignaturePad = new SignaturePad(document.getElementById('clientSignaturePad'));
+        }
+
+        // Clear Signature
+        function clearSignature(padId) {
+            if (padId === 'supervisorSignaturePad' && supervisorSignaturePad) {
+                supervisorSignaturePad.clear();
+            } else if (padId === 'clientSignaturePad' && clientSignaturePad) {
+                clientSignaturePad.clear();
+            }
+        }
+
+        // Simple SignaturePad implementation
+        class SignaturePad {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.isDrawing = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                
+                this.setupEventListeners();
+                this.clear();
+            }
+            
+            setupEventListeners() {
+                // Mouse events
+                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+                
+                // Touch events
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.startDrawing(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.draw(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
+            }
+            
+            startDrawing(e) {
+                this.isDrawing = true;
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastX = e.clientX - rect.left;
+                this.lastY = e.clientY - rect.top;
+            }
+            
+            draw(e) {
+                if (!this.isDrawing) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.lineTo(currentX, currentY);
+                this.ctx.stroke();
+                
+                this.lastX = currentX;
+                this.lastY = currentY;
+            }
+            
+            stopDrawing() {
+                this.isDrawing = false;
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+            }
+            
+            isEmpty() {
+                const blank = document.createElement('canvas');
+                blank.width = this.canvas.width;
+                blank.height = this.canvas.height;
+                blank.getContext('2d').fillStyle = 'white';
+                blank.getContext('2d').fillRect(0, 0, blank.width, blank.height);
+                return this.canvas.toDataURL() === blank.toDataURL();
+            }
+            
+            toDataURL() {
+                return this.canvas.toDataURL();
+            }
+        }
+
+        // GitHub Configuration
+        const GITHUB_CONFIG = {
+            username: 'Neelp4258',
+            repo: 'Trivanta-Leads',
+            token: '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',
+            branch: 'main',
+            imagePath: 'completion-images'
+        };
+
+        // Global variable to store captured image
+        let capturedSiteImage = null;
+
+        // Compress Image to reduce file size
+        function compressImage(file, maxSizeMB = 1) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Calculate new dimensions (max 1920x1920 for quality balance)
+                        const maxDimension = 1920;
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                height = (height / width) * maxDimension;
+                                width = maxDimension;
+                            } else {
+                                width = (width / height) * maxDimension;
+                                height = maxDimension;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Start with high quality and reduce if needed
+                        let quality = 0.9;
+                        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        
+                        // Keep reducing quality until file size is under maxSizeMB
+                        while (compressedDataUrl.length > maxSizeMB * 1024 * 1024 * 1.37 && quality > 0.1) {
+                            quality -= 0.1;
+                            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+                        
+                        resolve(compressedDataUrl);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        // Handle Image Capture
+        async function handleImageCapture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select a valid image file');
+                return;
+            }
+
+            // Show processing message
+            showToast('Processing image... Please wait');
+
+            try {
+                // Compress the image
+                const compressedDataUrl = await compressImage(file, 1); // Max 1MB
+                
+                // Calculate compressed size
+                const compressedSizeKB = Math.round((compressedDataUrl.length * 0.75) / 1024);
+                
+                capturedSiteImage = {
+                    base64: compressedDataUrl.split(',')[1], // Remove data:image/...;base64, prefix
+                    dataUrl: compressedDataUrl,
+                    fileName: `site-completion-${Date.now()}.jpg`
+                };
+
+                // Show preview
+                document.getElementById('previewImg').src = compressedDataUrl;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('clearImageBtn').style.display = 'inline-block';
+                
+                showToast(`Image captured & optimized! (${compressedSizeKB} KB) ✓`, 'success');
+            } catch (error) {
+                console.error('Error processing image:', error);
+                showToast('Error processing image. Please try again.');
+            }
+        }
+
+        // Clear Site Image
+        function clearSiteImage() {
+            capturedSiteImage = null;
+            document.getElementById('siteImageInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('clearImageBtn').style.display = 'none';
+            showToast('Image removed');
+        }
+
+        // Upload Image to GitHub
+        async function uploadImageToGitHub(imageData, fileName) {
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.imagePath}/${fileName}`;
+                
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_CONFIG.token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Add site completion image: ${fileName}`,
+                        content: imageData,
+                        branch: GITHUB_CONFIG.branch
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to upload image');
+                }
+
+                const result = await response.json();
+                
+                // Return the raw GitHub URL for the image
+                const rawUrl = `https://raw.githubusercontent.com/${GITHUB_CONFIG.username}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.imagePath}/${fileName}`;
+                
+                return {
+                    success: true,
+                    url: rawUrl,
+                    downloadUrl: result.content.download_url,
+                    htmlUrl: result.content.html_url
+                };
+                
+            } catch (error) {
+                console.error('Error uploading to GitHub:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Handle Installation Details Form Submission
+        document.getElementById('installationDetailsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const installationData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                installationData[key] = value;
+            }
+            
+            // Add metadata
+            installationData.leadId = currentInstallation.id;
+            installationData.company = currentInstallation.company;
+            installationData.contact = currentInstallation.contact;
+            installationData.phone = currentInstallation.phone;
+            installationData.email = currentInstallation.email;
+            installationData.createdAt = firebase.firestore.Timestamp.now();
+            installationData.createdBy = currentUser.fullName || currentUser.username;
+            
+            try {
+                // Save installation
+                const docRef = await db.collection('installations').add(installationData);
+                
+                // Update lead status to indicate installation scheduled
+                if (currentInstallation.isLead || !installations.find(i => i.id === currentInstallation.id)) {
+                    await db.collection('leads').doc(currentInstallation.id).update({
+                        installationScheduled: true,
+                        installationId: docRef.id,
+                        updatedAt: firebase.firestore.Timestamp.now(),
+                        updatedBy: currentUser.fullName || currentUser.username
+                    });
+                }
+                
+                showToast('Parking system installation details saved successfully');
+                closeModal('installationDetailsModal');
+                loadInstallations();
+                logActivity(`Automated parking system installation scheduled for ${installationData.company}`);
+                
+            } catch (error) {
+                console.error('Error saving installation:', error);
+                showToast('Error saving installation details');
+            }
+        });
+
+        // Handle Installation Completion Form Submission
+        document.getElementById('installationCompletionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate signatures
+            if (!supervisorSignaturePad || supervisorSignaturePad.isEmpty()) {
+                showToast('Supervisor signature is required');
+                return;
+            }
+            
+            if (!clientSignaturePad || clientSignaturePad.isEmpty()) {
+                showToast('Client signature is required');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const completionData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                completionData[key] = value;
+            }
+            
+            // Add signatures
+            completionData.supervisorSignature = supervisorSignaturePad.toDataURL();
+            completionData.clientSignature = clientSignaturePad.toDataURL();
+            completionData.completedAt = firebase.firestore.Timestamp.now();
+            completionData.completedBy = currentUser.fullName || currentUser.username;
+            completionData.status = 'completed';
+            
+            try {
+                // Show uploading toast
+                showToast('Processing completion... Please wait');
+                
+                // Upload site image to GitHub if captured
+                if (capturedSiteImage) {
+                    showToast('Uploading site image to GitHub...');
+                    const uploadResult = await uploadImageToGitHub(
+                        capturedSiteImage.base64,
+                        capturedSiteImage.fileName
+                    );
+                    
+                    if (uploadResult.success) {
+                        completionData.siteImageUrl = uploadResult.url;
+                        completionData.siteImageGitHubUrl = uploadResult.htmlUrl;
+                        completionData.siteImageFileName = capturedSiteImage.fileName;
+                        showToast('Site image uploaded successfully! ✓', 'success');
+                    } else {
+                        console.error('Failed to upload image:', uploadResult.error);
+                        showToast('Warning: Failed to upload image to GitHub. Continuing with completion...', 'warning');
+                    }
+                }
+                
+                // Update installation
+                await db.collection('installations').doc(currentInstallation.id).update(completionData);
+                
+                showToast('Parking system installation completed successfully! ✓', 'success');
+                closeModal('installationCompletionModal');
+                
+                // Clear captured image
+                clearSiteImage();
+                
+                loadInstallations();
+                logActivity(`Automated parking system installation completed for ${currentInstallation.company}`);
+                
+                // Show receipt preview
+                setTimeout(() => {
+                    viewInstallationReceipt(currentInstallation.id);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error completing installation:', error);
+                showToast('Error completing installation: ' + error.message);
+            }
+        });
+
+        // Preview Receipt
+        function previewReceipt() {
+            const form = document.getElementById('installationCompletionForm');
+            const formData = new FormData(form);
+            
+            // Create temporary completion data for preview
+            const tempData = {};
+            for (let [key, value] of formData.entries()) {
+                tempData[key] = value;
+            }
+            
+            // Add signatures if available
+            if (supervisorSignaturePad && !supervisorSignaturePad.isEmpty()) {
+                tempData.supervisorSignature = supervisorSignaturePad.toDataURL();
+            }
+            if (clientSignaturePad && !clientSignaturePad.isEmpty()) {
+                tempData.clientSignature = clientSignaturePad.toDataURL();
+            }
+            
+            generateReceiptHTML({ ...currentInstallation, ...tempData });
+            document.getElementById('receiptPreviewModal').style.display = 'block';
+        }
+
+        // View Installation Receipt
+        async function viewInstallationReceipt(installationId) {
+            try {
+                const installationDoc = await db.collection('installations').doc(installationId).get();
+                const installation = installationDoc.data();
+                
+                generateReceiptHTML(installation);
+                document.getElementById('receiptPreviewModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading installation receipt:', error);
+                showToast('Error loading receipt');
+            }
+        }
+
+        // Generate Receipt HTML
+        function generateReceiptHTML(installation) {
+            const receiptContent = document.getElementById('receiptContent');
+            const currentDate = new Date().toLocaleDateString();
+            
+            receiptContent.innerHTML = `
+                <div class="receipt-header">
+                    <img src="trivanta.png" alt="Trivanta Logo" class="receipt-logo" onerror="this.style.display='none'">
+                    <div class="receipt-header-content">
+                        <div class="receipt-title">AUTOMATED PARKING SYSTEM</div>
+                        <div class="receipt-subtitle">INSTALLATION COMPLETION CERTIFICATE</div>
+                        <p class="receipt-company"><strong>Trivanta Edge Solutions</strong></p>
+                        <p class="receipt-company">Professional Automated Parking System Solutions</p>
+                    </div>
+                </div>
+                
+                <div class="receipt-info">
+                    <div>
+                        <h4>Client Information</h4>
+                        <p><strong>Company:</strong> ${installation.company || 'N/A'}</p>
+                        <p><strong>Contact:</strong> ${installation.contact || installation.clientName || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${installation.phone || 'N/A'}</p>
+                        <p><strong>Address:</strong> ${installation.installationAddress || installation.location || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <h4>Installation Details</h4>
+                        <p><strong>Date:</strong> ${installation.installationDate ? new Date(installation.installationDate).toLocaleDateString() : currentDate}</p>
+                        <p><strong>Service Type:</strong> ${installation.serviceType || 'N/A'}</p>
+                        <p><strong>Technician:</strong> ${installation.technicianName || 'N/A'}</p>
+                        <p><strong>Supervisor:</strong> ${installation.supervisorName || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <div class="receipt-section">
+                    <h4>Parking System Installation Details</h4>
+                    <p>${installation.workDescription || 'N/A'}</p>
+                </div>
+                
+                <div class="receipt-section">
+                    <h4>Installation Completion Summary</h4>
+                    <p>${installation.completionSummary || 'Automated parking system installation completed as per specifications and tested successfully'}</p>
+                </div>
+                
+                ${installation.materialsUsed ? `
+                <div class="receipt-section">
+                    <h4>Components & Materials Installed</h4>
+                    <p>${installation.materialsUsed}</p>
+                </div>
+                ` : ''}
+                
+                ${installation.testingResults ? `
+                <div class="receipt-section">
+                    <h4>System Testing & Commissioning</h4>
+                    <p>${installation.testingResults}</p>
+                </div>
+                ` : ''}
+                
+                <div class="receipt-signatures">
+                    <div class="signature-block">
+                        <div class="signature-line">
+                            ${installation.supervisorSignature ? `<img src="${installation.supervisorSignature}" class="signature-image" alt="Project Manager Signature">` : ''}
+                        </div>
+                        <p><strong>Project Manager/Supervisor Signature</strong></p>
+                        <p>${installation.supervisorName || 'Project Manager'}</p>
+                        <p>Trivanta Edge Solutions</p>
+                    </div>
+                    <div class="signature-block">
+                        <div class="signature-line">
+                            ${installation.clientSignature ? `<img src="${installation.clientSignature}" class="signature-image" alt="Client Representative Signature">` : ''}
+                        </div>
+                        <p><strong>Client Representative Signature</strong></p>
+                        <p>${installation.clientName || installation.contact || 'Client Representative'}</p>
+                        <p>${installation.clientDesignation || 'Client Representative'}</p>
+                    </div>
+                </div>
+                
+                ${installation.siteImageUrl ? `
+                <div style="margin-top: 20px; text-align: center; border-top: 2px solid #3949ab; padding-top: 15px;">
+                    <h4 style="color: #1a237e; margin-bottom: 10px; font-size: 16px;">📸 Site Completion Image</h4>
+                    <div style="display: inline-block;">
+                        <img src="${installation.siteImageUrl}" alt="Site Completion" 
+                             style="max-width: 100%; max-height: 180px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: block;"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=color:#f44336;font-size:12px>Image failed to load</p>'">
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #000; font-size: 12px; color: #666;">
+                    <p>This certificate confirms the successful completion and commissioning of the automated parking system installation.</p>
+                    <p>Generated on: ${currentDate} | Certificate ID: APS-INST-${installation.id || Date.now()}</p>
+                    <p>For technical support & maintenance: support@trivanta.com | +91-XXX-XXX-XXXX</p>
+                    <p><strong>Warranty:</strong> As per terms and conditions in the installation agreement</p>
+                </div>
+            `;
+        }
+
+        // Download Receipt as PDF
+        function downloadReceipt() {
+            const { jsPDF } = window.jspdf;
+            const receiptElement = document.getElementById('receiptContent');
+            const installation = currentInstallation;
+            
+            // Create a temporary container to measure and scale the receipt
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.width = '1400px';
+            tempContainer.style.background = 'white';
+            tempContainer.innerHTML = receiptElement.innerHTML;
+            document.body.appendChild(tempContainer);
+            
+            html2canvas(tempContainer, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: 1400,
+                height: tempContainer.scrollHeight
+            }).then(canvas => {
+                document.body.removeChild(tempContainer);
+                
+                // Create landscape PDF
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const pageWidth = doc.internal.pageSize.getWidth(); // 297mm (landscape)
+                const pageHeight = doc.internal.pageSize.getHeight(); // 210mm (landscape)
+                const margin = 8;
+                
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const canvasRatio = canvasHeight / canvasWidth;
+                
+                const availableWidth = pageWidth - (2 * margin);
+                const availableHeight = pageHeight - (2 * margin);
+                
+                // Calculate dimensions to fit on single page
+                let imgWidth = availableWidth;
+                let imgHeight = availableWidth * canvasRatio;
+                
+                if (imgHeight > availableHeight) {
+                    imgHeight = availableHeight;
+                    imgWidth = availableHeight / canvasRatio;
+                }
+                
+                // Center the image
+                const xOffset = (pageWidth - imgWidth) / 2;
+                const yOffset = margin;
+                
+                doc.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+                
+                const filename = `APS_Installation_Certificate_${installation?.company || 'Unknown'}_${new Date().getTime()}.pdf`;
+                doc.save(filename);
+                
+                showToast('✓ Landscape PDF generated successfully!');
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                
+                // Fallback: Professional Landscape Certificate
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 12;
+                let y = margin;
+                
+                // Title Section
+                doc.setFontSize(22);
+                doc.setFont(undefined, 'bold');
+                doc.text('INSTALLATION COMPLETION CERTIFICATE', pageWidth / 2, y, { align: 'center' });
+                y += 8;
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                doc.text('Automated Parking System', pageWidth / 2, y, { align: 'center' });
+                y += 5;
+                doc.setFontSize(10);
+                doc.text('Trivanta Edge Solutions | Professional Solutions', pageWidth / 2, y, { align: 'center' });
+                y += 10;
+                
+                // Separator
+                doc.setLineWidth(1);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 8;
+                
+                // Two column layout
+                const col1X = margin + 5;
+                const col2X = pageWidth / 2 + 5;
+                const colWidth = (pageWidth / 2) - margin - 8;
+                
+                // LEFT COLUMN - Client Information
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('CLIENT INFORMATION', col1X, y);
+                y += 6;
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Company: ${installation?.company || 'N/A'}`, col1X + 2, y);
+                y += 5;
+                doc.text(`Contact Person: ${installation?.contact || 'N/A'}`, col1X + 2, y);
+                y += 5;
+                doc.text(`Phone: ${installation?.phone || 'N/A'}`, col1X + 2, y);
+                y += 5;
+                doc.text(`Address: ${installation?.address || 'N/A'}`, col1X + 2, y);
+                y += 10;
+                
+                // RIGHT COLUMN - Installation Details
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('INSTALLATION DETAILS', col2X, margin + 14);
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Date: ${installation?.installationDate || new Date().toLocaleDateString()}`, col2X + 2, margin + 20);
+                doc.text(`Service Type: ${installation?.serviceType || 'N/A'}`, col2X + 2, margin + 25);
+                doc.text(`Technician: ${installation?.technicianName || 'N/A'}`, col2X + 2, margin + 30);
+                doc.text(`Supervisor: ${installation?.supervisorName || 'N/A'}`, col2X + 2, margin + 35);
+                
+                y = margin + 42;
+                
+                // Work Sections - Full width
+                doc.setLineWidth(0.8);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 6;
+                
+                // Installation Completion Summary
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Installation Completion Summary', col1X, y);
+                y += 4;
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                const summaryText = doc.splitTextToSize(installation?.completionSummary || 'Parking system installation completed as per specifications', colWidth * 2);
+                doc.text(summaryText, col1X, y);
+                y += summaryText.length * 3.5 + 3;
+                
+                // Components & Materials
+                if (installation?.materialsUsed) {
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Components & Materials Installed', col1X, y);
+                    y += 4;
+                    
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'normal');
+                    const materialsText = doc.splitTextToSize(installation.materialsUsed, colWidth * 2);
+                    doc.text(materialsText, col1X, y);
+                    y += materialsText.length * 3.5 + 3;
+                }
+                
+                // System Testing
+                if (installation?.testingResults) {
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('System Testing & Commissioning', col1X, y);
+                    y += 4;
+                    
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'normal');
+                    const testingText = doc.splitTextToSize(installation.testingResults, colWidth * 2);
+                    doc.text(testingText, col1X, y);
+                }
+                
+                // Signature Section - Bottom
+                const sigY = pageHeight - 38;
+                doc.setLineWidth(0.8);
+                doc.line(margin, sigY, pageWidth - margin, sigY);
+                
+                const sigCol1 = margin + 8;
+                const sigCol2 = pageWidth / 2 + 8;
+                const sigBoxHeight = 20;
+                
+                // Supervisor Signature
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'bold');
+                doc.text('PROJECT MANAGER/SUPERVISOR', sigCol1, sigY + 6);
+                
+                if (installation?.supervisorSignature) {
+                    try {
+                        doc.addImage(installation.supervisorSignature, 'PNG', sigCol1, sigY + 10, 50, 15);
+                    } catch (e) {}
+                }
+                
+                doc.setLineWidth(0.5);
+                doc.line(sigCol1, sigY + 28, sigCol1 + 60, sigY + 28);
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'normal');
+                doc.text(installation?.supervisorName || 'Supervisor', sigCol1, sigY + 32);
+                doc.text('Trivanta Edge Solutions', sigCol1, sigY + 35);
+                
+                // Client Signature
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'bold');
+                doc.text('CLIENT REPRESENTATIVE', sigCol2, sigY + 6);
+                
+                if (installation?.clientSignature) {
+                    try {
+                        doc.addImage(installation.clientSignature, 'PNG', sigCol2, sigY + 10, 50, 15);
+                    } catch (e) {}
+                }
+                
+                doc.setLineWidth(0.5);
+                doc.line(sigCol2, sigY + 28, sigCol2 + 60, sigY + 28);
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'normal');
+                doc.text(installation?.clientName || 'Client Rep.', sigCol2, sigY + 32);
+                doc.text(installation?.clientDesignation || 'Authorized Rep.', sigCol2, sigY + 35);
+                
+                // Footer
+                const footerY = pageHeight - 6;
+                doc.setFontSize(7);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Cert ID: APS-${installation?.id || Date.now()} | Generated: ${new Date().toLocaleDateString()} | support@trivanta.com`, pageWidth / 2, footerY, { align: 'center' });
+                
+                const filename = `APS_Installation_Certificate_${installation?.company || 'Unknown'}_${new Date().getTime()}.pdf`;
+                doc.save(filename);
+                
+                showToast('✓ Certificate downloaded (fallback format)');
+            });
+        }
+
+        // Print Receipt
+        function printReceipt() {
+            const receiptContent = document.getElementById('receiptContent').innerHTML;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>APS Installation Certificate</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; margin: 20px; }
+                        .receipt-preview { background: white; }
+                        .receipt-header { display: flex; align-items: flex-start; gap: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+                        .receipt-logo { max-width: 100px; min-width: 80px; flex-shrink: 0; }
+                        .receipt-header-content { flex: 1; text-align: center; }
+                        .receipt-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+                        .receipt-subtitle { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                        .receipt-company { font-size: 12px; margin-bottom: 2px; }
+                        .receipt-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                        .receipt-section { margin-bottom: 20px; }
+                        .receipt-section h4 { border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+                        .receipt-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; border-top: 2px solid #000; padding-top: 20px; }
+                        .signature-block { text-align: center; }
+                        .signature-line { border-bottom: 2px solid #000; height: 60px; margin-bottom: 10px; display: flex; align-items: end; justify-content: center; padding-bottom: 5px; }
+                        .signature-image { max-width: 150px; max-height: 50px; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-preview">${receiptContent}</div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }
+
+        // Search Installations
+        document.getElementById('searchInstallations').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = installations.filter(installation => 
+                (installation.company || '').toLowerCase().includes(searchTerm) ||
+                (installation.contact || '').toLowerCase().includes(searchTerm) ||
+                (installation.serviceType || '').toLowerCase().includes(searchTerm) ||
+                (installation.technicianName || '').toLowerCase().includes(searchTerm)
+            );
+            renderInstallations(filtered);
+        });
+
+        // Toggle Meeting Date Field
+        function toggleMeetingDate(status) {
+            // Check both add and edit forms
+            const addMeetingDateGroup = document.querySelector('#addLeadModal #meetingDateGroup');
+            const editMeetingDateGroup = document.querySelector('#editLeadModal #meetingDateGroup');
+            
+            [addMeetingDateGroup, editMeetingDateGroup].forEach(meetingDateGroup => {
+                if (meetingDateGroup) {
+                    if (status === 'meeting') {
+                        meetingDateGroup.classList.remove('hidden');
+                    } else {
+                        meetingDateGroup.classList.add('hidden');
+                        // Clear the meeting date if status is not meeting
+                        const meetingDateInput = meetingDateGroup.querySelector('input[name="meetingDate"]');
+                        if (meetingDateInput) {
+                            meetingDateInput.value = '';
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Close Modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if user is already logged in from localStorage
+            const savedUser = localStorage.getItem('trivantaUser');
+            
+            if (savedUser) {
+                // Restore the user session
+                currentUser = JSON.parse(savedUser);
+                loginSuccess();
+            } else {
+                // Show login screen if no saved user
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('dashboard').style.display = 'none';
+            }
+        });
+        
+        // Update Meeting Outcome
+        function updateMeetingOutcome(leadId, outcome) {
+            currentMeetingLeadId = leadId;
+            const modal = document.getElementById('meetingOutcomeModal');
+            const title = document.getElementById('meetingOutcomeTitle');
+            const form = document.getElementById('meetingOutcomeForm');
+            const rescheduleFields = document.getElementById('rescheduleFields');
+            const submitBtn = document.getElementById('updateMeetingBtn');
+            
+            // Reset form
+            form.reset();
+            
+            // Configure modal based on outcome type
+            if (outcome === 'done') {
+                title.textContent = 'Meeting Completed';
+                submitBtn.textContent = 'Mark as Completed';
+                rescheduleFields.classList.add('hidden');
+                document.getElementById('newMeetingDate').removeAttribute('required');
+            } else if (outcome === 'cancelled') {
+                title.textContent = 'Meeting Cancelled';
+                submitBtn.textContent = 'Mark as Cancelled';
+                rescheduleFields.classList.add('hidden');
+                document.getElementById('newMeetingDate').removeAttribute('required');
+            } else if (outcome === 'rescheduled') {
+                title.textContent = 'Reschedule Meeting';
+                submitBtn.textContent = 'Reschedule';
+                rescheduleFields.classList.remove('hidden');
+                document.getElementById('newMeetingDate').setAttribute('required', 'required');
+                
+                // Set default date to tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(10, 0, 0, 0);
+                
+                // Format the date to ISO format for datetime-local input
+                const tomorrowFormatted = tomorrow.toISOString().slice(0, 16);
+                document.getElementById('newMeetingDate').value = tomorrowFormatted;
+            }
+            
+            // Store outcome type in a data attribute
+            form.setAttribute('data-outcome', outcome);
+            
+            // Show modal
+            modal.style.display = 'block';
+        }
+        
+        // Handle Meeting Outcome Form Submission
+        document.getElementById('meetingOutcomeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentMeetingLeadId) {
+                showToast('Error: No lead selected');
+                return;
+            }
+            
+            const form = e.target;
+            const outcome = form.getAttribute('data-outcome');
+            const meetingNotes = document.getElementById('meetingNotes').value;
+            const nextStatus = document.getElementById('nextStatus').value;
+            let newMeetingDate = null;
+            
+            // Get new meeting date if rescheduled
+            if (outcome === 'rescheduled') {
+                newMeetingDate = document.getElementById('newMeetingDate').value;
+                if (!newMeetingDate) {
+                    showToast('Please select a new meeting date');
+                    return;
+                }
+            }
+            
+            try {
+                // Update lead with meeting outcome
+                const updateData = {
+                    meetingOutcome: outcome,
+                    meetingNotes: meetingNotes,
+                    status: nextStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: currentUser.username
+                };
+                
+                // Add new meeting date if rescheduled
+                if (outcome === 'rescheduled' && newMeetingDate) {
+                    updateData.newMeetingDate = newMeetingDate;
+                    // If keeping in meeting status and rescheduled, update the primary meeting date
+                    if (nextStatus === 'meeting') {
+                        updateData.meetingDate = newMeetingDate;
+                    }
+                }
+                
+                await db.collection('leads').doc(currentMeetingLeadId).update(updateData);
+                
+                // Log activity
+                let activityDescription;
+                if (outcome === 'done') {
+                    activityDescription = `Meeting completed for lead - next step: ${getStatusName(nextStatus)}`;
+                } else if (outcome === 'cancelled') {
+                    activityDescription = `Meeting cancelled for lead - next step: ${getStatusName(nextStatus)}`;
+                } else if (outcome === 'rescheduled') {
+                    activityDescription = `Meeting rescheduled for lead to ${new Date(newMeetingDate).toLocaleString()}`;
+                }
+                
+                await logActivity(activityDescription);
+                
+                // Close modal and refresh leads
+                closeModal('meetingOutcomeModal');
+                
+                // Refresh the active section (leads or meetings)
+                const meetingsTabActive = document.querySelector('.nav-tab[onclick="showSection(\'meetings\')"]').classList.contains('active');
+                if (meetingsTabActive) {
+                    loadMeetings();
+                } else {
+                    loadLeads('all');
+                }
+                
+                showToast('Meeting status updated successfully');
+                
+            } catch (error) {
+                console.error('Error updating meeting outcome:', error);
+                showToast('Error updating meeting status');
+            }
+        });
+        
+        // Helper function to get status name for activity log
+        function getStatusName(status) {
+            const statusMap = {
+                'new': 'New Lead',
+                'contacted': 'Contacted',
+                'meeting': 'Meeting Scheduled',
+                'proposal': 'Proposal Sent',
+                'negotiation': 'Negotiation',
+                'closed': 'Closed (Won)',
+                'lost': 'Closed (Lost)'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // Initialize Analytics Charts
+        function initializeCharts() {
+            // Destroy existing charts to prevent duplicates
+            if (statusChart) statusChart.destroy();
+            if (timelineChart) timelineChart.destroy();
+            if (serviceChart) serviceChart.destroy();
+            if (meetingsChart) meetingsChart.destroy();
+            
+            // Get the necessary data from leads
+            const statusCounts = {
+                'new': 0,
+                'contacted': 0,
+                'meeting': 0,
+                'proposal': 0,
+                'negotiation': 0,
+                'closed': 0,
+                'lost': 0
+            };
+            
+            const serviceTypes = {};
+            const monthlyLeads = {};
+            const meetingsData = {
+                'past': 0,
+                'upcoming': 0,
+                'completed': 0,
+                'cancelled': 0,
+                'rescheduled': 0
+            };
+            
+            // Process leads data
+            leads.forEach(lead => {
+                // Count statuses
+                const status = lead.status || 'new';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+                
+                // Count service types
+                const serviceType = lead.serviceType || 'Unknown';
+                serviceTypes[serviceType] = (serviceTypes[serviceType] || 0) + 1;
+                
+                // Group by month for timeline
+                let creationDate = lead.createdAt ? 
+                    (lead.createdAt.toDate ? lead.createdAt.toDate() : new Date(lead.createdAt)) 
+                    : new Date();
+                
+                const monthYear = `${creationDate.getMonth() + 1}/${creationDate.getFullYear()}`;
+                monthlyLeads[monthYear] = (monthlyLeads[monthYear] || 0) + 1;
+                
+                // Process meetings data
+                if (lead.meetingDate) {
+                    const meetingDate = lead.meetingDate.toDate ? 
+                        lead.meetingDate.toDate() : new Date(lead.meetingDate);
+                    
+                    if (meetingDate < new Date()) {
+                        meetingsData.past++;
+                    } else {
+                        meetingsData.upcoming++;
+                    }
+                    
+                    if (lead.meetingOutcome === 'done') {
+                        meetingsData.completed++;
+                    } else if (lead.meetingOutcome === 'cancelled') {
+                        meetingsData.cancelled++;
+                    } else if (lead.meetingOutcome === 'rescheduled') {
+                        meetingsData.rescheduled++;
+                    }
+                }
+            });
+            
+            // Prepare chart data
+            
+            // 1. Lead Status Distribution Chart
+            const statusCtx = document.getElementById('leadStatusChart').getContext('2d');
+            const statusLabels = Object.keys(statusCounts).map(status => getStatusName(status));
+            const statusValues = Object.values(statusCounts);
+            const statusColors = [
+                '#4CAF50', // new
+                '#2196F3', // contacted 
+                '#3F51B5', // meeting
+                '#FF9800', // proposal
+                '#9C27B0', // negotiation
+                '#4CAF50', // closed
+                '#F44336'  // lost
+            ];
+            
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusValues,
+                        backgroundColor: statusColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+            
+            // 2. Lead Acquisition Timeline
+            const timelineCtx = document.getElementById('leadTimelineChart').getContext('2d');
+            
+            // Sort months chronologically
+            const sortedMonths = Object.keys(monthlyLeads).sort((a, b) => {
+                const [aMonth, aYear] = a.split('/').map(Number);
+                const [bMonth, bYear] = b.split('/').map(Number);
+                
+                if (aYear !== bYear) return aYear - bYear;
+                return aMonth - bMonth;
+            });
+            
+            const timelineValues = sortedMonths.map(month => monthlyLeads[month]);
+            
+            timelineChart = new Chart(timelineCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [{
+                        label: 'New Leads',
+                        data: timelineValues,
+                        backgroundColor: 'rgba(63, 81, 181, 0.2)',
+                        borderColor: 'rgba(63, 81, 181, 1)',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Leads'
+                            },
+                            ticks: {
+                                precision: 0
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month/Year'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 3. Service Type Distribution
+            const serviceCtx = document.getElementById('serviceTypeChart').getContext('2d');
+            const serviceLabels = Object.keys(serviceTypes);
+            const serviceValues = Object.values(serviceTypes);
+            
+            // Generate colors for each service type
+            const serviceColors = serviceLabels.map((_, i) => {
+                const hue = (i * 40) % 360;
+                return `hsl(${hue}, 70%, 50%)`;
+            });
+            
+            serviceChart = new Chart(serviceCtx, {
+                type: 'bar',
+                data: {
+                    labels: serviceLabels,
+                    datasets: [{
+                        label: 'Service Types',
+                        data: serviceValues,
+                        backgroundColor: serviceColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Leads'
+                            },
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 4. Meetings Timeline
+            const meetingsCtx = document.getElementById('meetingsTimelineChart').getContext('2d');
+            const meetingsLabels = ['Past', 'Upcoming', 'Completed', 'Cancelled', 'Rescheduled'];
+            const meetingsValues = [
+                meetingsData.past,
+                meetingsData.upcoming,
+                meetingsData.completed,
+                meetingsData.cancelled,
+                meetingsData.rescheduled
+            ];
+            
+            const meetingsColors = [
+                'rgba(244, 67, 54, 0.7)',    // Past
+                'rgba(76, 175, 80, 0.7)',    // Upcoming
+                'rgba(33, 150, 243, 0.7)',   // Completed
+                'rgba(255, 152, 0, 0.7)',    // Cancelled
+                'rgba(156, 39, 176, 0.7)'    // Rescheduled
+            ];
+            
+            meetingsChart = new Chart(meetingsCtx, {
+                type: 'bar',
+                data: {
+                    labels: meetingsLabels,
+                    datasets: [{
+                        label: 'Meetings',
+                        data: meetingsValues,
+                        backgroundColor: meetingsColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Meetings'
+                            },
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
